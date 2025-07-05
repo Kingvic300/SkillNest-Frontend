@@ -17,8 +17,10 @@ import {
      Heart,
      Clock,
      CheckCircle,
+     Eye,
 } from "lucide-react";
 import DashboardHeader from "../components/DashboardHeader";
+import JobDetails from "../components/JobDetails";
 import { toast } from "sonner";
 
 const JobSeekerDashboard = ({ user }) => {
@@ -70,6 +72,8 @@ const JobSeekerDashboard = ({ user }) => {
 
      const [appliedJobs, setAppliedJobs] = useState([]);
      const [savedJobs, setSavedJobs] = useState([]);
+     const [selectedJob, setSelectedJob] = useState(null);
+     const [showJobDetails, setShowJobDetails] = useState(false);
      const [profile, setProfile] = useState({
           fullName: user?.fullName || "John Doe",
           email: user?.email || "john.doe@email.com",
@@ -116,6 +120,16 @@ const JobSeekerDashboard = ({ user }) => {
 
      const handleProfileSave = () => toast.success("Profile updated successfully!");
      const toggleDarkMode = () => setDarkMode((prev) => !prev);
+
+     const handleViewJobDetails = (job) => {
+          setSelectedJob(job);
+          setShowJobDetails(true);
+     };
+
+     const handleCloseJobDetails = () => {
+          setShowJobDetails(false);
+          setSelectedJob(null);
+     };
 
      const filteredJobs = availableJobs.filter((job) =>
          [job.title, job.companyName, job.location].some((text) =>
@@ -269,9 +283,21 @@ const JobSeekerDashboard = ({ user }) => {
                                                         </div>
                                                         <div className="flex gap-2">
                                                              <Button
+                                                                 onClick={() => handleViewJobDetails(job)}
+                                                                 variant="outline"
+                                                                 className={`flex-1 ${
+                                                                     darkMode
+                                                                         ? "dark:border-slate-600 dark:text-gray-300 dark:hover:bg-slate-700"
+                                                                         : "border-gray-300 text-gray-700 hover:bg-gray-100"
+                                                                 }`}
+                                                             >
+                                                                  <Eye className="w-4 h-4 mr-2" />
+                                                                  View Details
+                                                             </Button>
+                                                             <Button
                                                                  onClick={() => handleApply(job)}
                                                                  disabled={appliedJobs.some((j) => j.id === job.id)}
-                                                                 className={`w-full text-white ${
+                                                                 className={`flex-1 text-white ${
                                                                      darkMode
                                                                          ? "dark:bg-blue-600 dark:hover:bg-blue-700"
                                                                          : "bg-blue-500 hover:bg-blue-600"
@@ -284,7 +310,7 @@ const JobSeekerDashboard = ({ user }) => {
                                                              <Button
                                                                  onClick={() => handleSaveJob(job)}
                                                                  variant="outline"
-                                                                 className={`w-full ${
+                                                                 className={`flex-1 ${
                                                                      darkMode
                                                                          ? "dark:border-slate-600 dark:text-gray-300 dark:hover:bg-slate-700"
                                                                          : "border-gray-300 text-gray-700 hover:bg-gray-100"
@@ -549,6 +575,23 @@ const JobSeekerDashboard = ({ user }) => {
                         )}
                    </main>
               </div>
+
+              {/* Job Details Modal */}
+              {showJobDetails && selectedJob && (
+                   <JobDetails
+                        job={selectedJob}
+                        onClose={handleCloseJobDetails}
+                        darkMode={darkMode}
+                        onApply={() => {
+                             handleApply(selectedJob);
+                             handleCloseJobDetails();
+                        }}
+                        onSave={() => {
+                             handleSaveJob(selectedJob);
+                        }}
+                        isSaved={savedJobs.some((j) => j.id === selectedJob.id)}
+                   />
+              )}
          </div>
      );
 };

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useTheme } from "../context/ThemeContext";
 import { toast } from "sonner";
+import JobDetails from "../components/JobDetails";
 import {
      Briefcase,
      UserCircle,
@@ -9,11 +11,32 @@ import {
      Trash2,
      CheckCircle,
      LogOut,
+     Settings,
+     Bell,
+     Search,
+     Building2,
+     Mail,
+     Phone,
+     MapPin,
+     Edit3,
+     Save,
+     Plus,
+     Filter,
+     Calendar,
+     DollarSign,
+     Users,
+     TrendingUp,
+     Award,
+     Shield,
+     Zap,
+     Eye
 } from "lucide-react";
 
 const EmployerDashboard = ({ user }) => {
      const { darkMode } = useTheme();
+     const navigate = useNavigate();
      const [tab, setTab] = useState("profile");
+     const [searchQuery, setSearchQuery] = useState("");
 
      const [profile, setProfile] = useState({
           companyName: "",
@@ -31,7 +54,19 @@ const EmployerDashboard = ({ user }) => {
           description: "",
           location: "",
           salary: "",
+          jobType: "Full-time",
+          industry: "Technology",
+          companySize: "50-200 employees",
+          founded: "2020",
+          requirements: [],
+          benefits: [],
+          contactEmail: "",
+          contactPhone: "",
+          website: ""
      });
+
+     const [selectedJob, setSelectedJob] = useState(null);
+     const [showJobDetails, setShowJobDetails] = useState(false);
 
      const tabs = [
           { key: "profile", label: "My Profile", icon: <UserCircle size={18} /> },
@@ -87,7 +122,7 @@ const EmployerDashboard = ({ user }) => {
                     ...prev,
                     profilePictureUrl: res.data.profilePictureUrl,
                }));
-               toast.success("Profile saved.");
+               toast.success("Profile saved successfully!");
           } catch (e) {
                console.error(e);
                toast.error("Failed to save profile.");
@@ -101,19 +136,43 @@ const EmployerDashboard = ({ user }) => {
                     ...newJob,
                });
                setJobs((prev) => [res.data, ...prev]);
-               toast.success("Job posted.");
+               toast.success("Job posted successfully!");
                setTab("posted");
-               setNewJob({ title: "", description: "", location: "", salary: "" });
+               setNewJob({ 
+                    title: "", 
+                    description: "", 
+                    location: "", 
+                    salary: "",
+                    jobType: "Full-time",
+                    industry: "Technology",
+                    companySize: "50-200 employees",
+                    founded: "2020",
+                    requirements: [],
+                    benefits: [],
+                    contactEmail: "",
+                    contactPhone: "",
+                    website: ""
+               });
           } catch {
                toast.error("Failed to post job.");
           }
+     };
+
+     const handleViewJobDetails = (job) => {
+          setSelectedJob(job);
+          setShowJobDetails(true);
+     };
+
+     const handleCloseJobDetails = () => {
+          setShowJobDetails(false);
+          setSelectedJob(null);
      };
 
      const handleDeleteJob = async (id) => {
           try {
                await axios.delete(`http://localhost:8080/employer/delete-job/${id}`);
                setJobs((prev) => prev.filter((j) => j.id !== id));
-               toast.success("Job deleted.");
+               toast.success("Job deleted successfully!");
           } catch {
                toast.error("Failed to delete job.");
           }
@@ -124,11 +183,25 @@ const EmployerDashboard = ({ user }) => {
                await axios.patch("http://localhost:8080/employer/verify-completion", {
                     jobId: id,
                });
-               toast.success("Job marked complete.");
+               toast.success("Job marked as complete!");
           } catch {
                toast.error("Verification failed.");
           }
      };
+
+     const handleLogout = () => {
+          // Clear any stored user data
+          localStorage.removeItem("user");
+          localStorage.removeItem("token");
+          // Navigate to home page
+          navigate("/");
+          toast.success("Logged out successfully!");
+     };
+
+     const filteredJobs = jobs.filter(job =>
+          job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          job.location.toLowerCase().includes(searchQuery.toLowerCase())
+     );
 
      return (
          <div
@@ -136,48 +209,106 @@ const EmployerDashboard = ({ user }) => {
                  darkMode ? "bg-gray-900 text-gray-100" : "bg-gray-50 text-gray-900"
              }`}
          >
+              {/* Enhanced Header */}
               <header
-                  className={`fixed top-0 left-0 right-0 h-16 flex items-center justify-between px-8 border-b z-10 shadow-sm ${
-                      darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+                  className={`fixed top-0 left-0 right-0 h-16 flex items-center justify-between px-8 border-b z-10 shadow-lg backdrop-blur-md ${
+                      darkMode ? "bg-gray-800/95 border-gray-700" : "bg-white/95 border-gray-200"
                   }`}
               >
-                   <h1 className="text-xl font-semibold tracking-wide">Employer Dashboard</h1>
+                   <div className="flex items-center gap-6">
+                        <h1 className="text-xl font-bold tracking-wide bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                             Employer Dashboard
+                        </h1>
+                        <div className="hidden md:flex items-center gap-2 text-sm text-gray-500">
+                             <TrendingUp className="w-4 h-4" />
+                             <span>Manage your company and job postings</span>
+                        </div>
+                   </div>
+                   
                    <div className="flex items-center gap-4">
-                        <img
-                            src={profile.profilePictureUrl || "/default-company.png"}
-                            alt="Company"
-                            className="w-9 h-9 rounded-full object-cover border"
-                        />
-                        <span className="font-medium text-sm truncate max-w-[160px]">
-                        {profile.companyName}
-                    </span>
+                        {/* Search Bar */}
+                        <div className="hidden md:flex items-center gap-2">
+                             <div className="relative">
+                                  <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${
+                                       darkMode ? "text-gray-400" : "text-gray-500"
+                                  }`} />
+                                  <input
+                                       type="text"
+                                       placeholder="Search jobs..."
+                                       value={searchQuery}
+                                       onChange={(e) => setSearchQuery(e.target.value)}
+                                       className={`pl-10 pr-4 py-2 rounded-full text-sm border transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                           darkMode
+                                               ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                                               : "bg-gray-100 border-gray-300 text-gray-900 placeholder-gray-500"
+                                       }`}
+                                  />
+                             </div>
+                        </div>
+
+                        {/* Notifications */}
                         <button
-                            className={`p-2 rounded-full ${
+                            className={`p-2 rounded-full transition-all duration-300 hover:scale-110 ${
                                 darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
                             }`}
+                            aria-label="Notifications"
                         >
-                             <LogOut size={18} />
+                             <Bell className={`w-5 h-5 ${
+                                 darkMode ? "text-gray-300" : "text-gray-600"
+                             }`} />
+                        </button>
+
+                        {/* Company Profile */}
+                        <div className="flex items-center gap-3">
+                             <div className="relative group">
+                                  <img
+                                      src={profile.profilePictureUrl || "/default-company.png"}
+                                      alt="Company"
+                                      className="w-10 h-10 rounded-full object-cover border-2 border-gray-300 dark:border-gray-600 shadow-sm transition-all duration-300 group-hover:scale-110"
+                                  />
+                                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></div>
+                             </div>
+                             <div className="hidden sm:block">
+                                  <div className="font-semibold text-sm truncate max-w-[160px]">
+                                       {profile.companyName || "Company Name"}
+                                  </div>
+                                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                                       Employer
+                                  </div>
+                             </div>
+                        </div>
+
+                        {/* Logout Button */}
+                        <button
+                            onClick={handleLogout}
+                            className={`p-2 rounded-full transition-all duration-300 hover:scale-110 ${
+                                darkMode ? "hover:bg-red-900/50 text-red-400" : "hover:bg-red-100 text-red-600"
+                            }`}
+                            aria-label="Logout"
+                        >
+                             <LogOut className="w-5 h-5" />
                         </button>
                    </div>
               </header>
 
               <div className="pt-16 flex">
+                   {/* Enhanced Sidebar */}
                    <aside
-                       className={`fixed top-16 left-0 w-64 h-[calc(100vh-4rem)] border-r shadow-sm transition-colors ${
+                       className={`fixed top-16 left-0 w-64 h-[calc(100vh-4rem)] border-r shadow-lg transition-colors ${
                            darkMode ? "bg-gray-850 border-gray-700" : "bg-white border-gray-200"
                        }`}
                    >
-                        <div className="p-6 space-y-2">
+                        <div className="p-6 space-y-3">
                              {tabs.map((t) => (
                                  <button
                                      key={t.key}
                                      onClick={() => setTab(t.key)}
-                                     className={`w-full flex items-center space-x-3 px-4 py-2 rounded-md font-medium text-sm transition ${
+                                     className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 ${
                                          tab === t.key
-                                             ? "bg-blue-600 text-white shadow-sm"
+                                             ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg transform scale-105"
                                              : darkMode
-                                                 ? "text-gray-300 hover:bg-gray-700"
-                                                 : "text-gray-800 hover:bg-gray-100"
+                                                 ? "text-gray-300 hover:bg-gray-700 hover:text-white"
+                                                 : "text-gray-800 hover:bg-gray-100 hover:text-blue-600"
                                      }`}
                                  >
                                       {t.icon}
@@ -185,19 +316,47 @@ const EmployerDashboard = ({ user }) => {
                                  </button>
                              ))}
                         </div>
+
+                        {/* Quick Stats */}
+                        <div className={`px-6 py-4 border-t ${
+                            darkMode ? "border-gray-700" : "border-gray-200"
+                        }`}>
+                             <h3 className="text-sm font-semibold mb-3 text-gray-500 dark:text-gray-400">
+                                  Quick Stats
+                             </h3>
+                             <div className="space-y-2">
+                                  <div className="flex items-center justify-between text-sm">
+                                       <span className="text-gray-600 dark:text-gray-400">Active Jobs</span>
+                                       <span className="font-semibold text-blue-600">{jobs.length}</span>
+                                  </div>
+                                  <div className="flex items-center justify-between text-sm">
+                                       <span className="text-gray-600 dark:text-gray-400">Total Views</span>
+                                       <span className="font-semibold text-green-600">1,234</span>
+                                  </div>
+                                  <div className="flex items-center justify-between text-sm">
+                                       <span className="text-gray-600 dark:text-gray-400">Applications</span>
+                                       <span className="font-semibold text-purple-600">56</span>
+                                  </div>
+                             </div>
+                        </div>
                    </aside>
 
-                   <main className="ml-64 flex-1 p-10 space-y-10">
+                   {/* Main Content */}
+                   <main className="ml-64 flex-1 p-8 space-y-8">
                         {tab === "profile" && (
                             <div className="max-w-4xl mx-auto">
                                  <div
-                                     className={`p-8 rounded-xl shadow-lg ${
-                                         darkMode ? "bg-gray-800" : "bg-white"
+                                     className={`p-8 rounded-2xl shadow-xl border ${
+                                         darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
                                      }`}
                                  >
-                                      <h2 className="text-2xl font-semibold mb-6">Company Profile</h2>
-                                      <div className="flex flex-col md:flex-row gap-8 mb-8">
-                                           <div className="flex flex-col items-center gap-3">
+                                      <div className="flex items-center gap-3 mb-8">
+                                           <Building2 className="w-6 h-6 text-blue-600" />
+                                           <h2 className="text-2xl font-bold">Company Profile</h2>
+                                      </div>
+                                      
+                                      <div className="flex flex-col lg:flex-row gap-8 mb-8">
+                                           <div className="flex flex-col items-center gap-4">
                                                 <div className="relative group">
                                                      <img
                                                          src={
@@ -205,9 +364,10 @@ const EmployerDashboard = ({ user }) => {
                                                              "/default-company.png"
                                                          }
                                                          alt="Company Logo"
-                                                         className="w-32 h-32 rounded-full object-cover border-2 border-gray-400 shadow-sm"
+                                                         className="w-32 h-32 rounded-2xl object-cover border-4 border-gray-200 dark:border-gray-600 shadow-lg transition-all duration-300 group-hover:scale-105"
                                                      />
-                                                     <div className="absolute inset-0 rounded-full bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-medium cursor-pointer">
+                                                     <div className="absolute inset-0 rounded-2xl bg-black/50 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center text-white text-sm font-medium cursor-pointer">
+                                                          <Edit3 className="w-5 h-5 mr-2" />
                                                           Change Logo
                                                      </div>
                                                      <input
@@ -225,32 +385,35 @@ const EmployerDashboard = ({ user }) => {
 
                                            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 {[
-                                                     "companyName",
-                                                     "companyEmail",
-                                                     "companyPhoneNumber",
-                                                     "companyLocation",
+                                                     { key: "companyName", icon: <Building2 className="w-4 h-4" />, label: "Company Name" },
+                                                     { key: "companyEmail", icon: <Mail className="w-4 h-4" />, label: "Email" },
+                                                     { key: "companyPhoneNumber", icon: <Phone className="w-4 h-4" />, label: "Phone" },
+                                                     { key: "companyLocation", icon: <MapPin className="w-4 h-4" />, label: "Location" },
                                                 ].map((field) => (
-                                                    <div key={field}>
-                                                         <label className="block mb-1 text-sm font-medium capitalize">
-                                                              {field.replace(/([A-Z])/g, " $1")}
+                                                    <div key={field.key} className="space-y-2">
+                                                         <label className="flex items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-400">
+                                                              {field.icon}
+                                                              {field.label}
                                                          </label>
                                                          <input
-                                                             value={profile[field]}
+                                                             value={profile[field.key]}
                                                              onChange={(e) =>
-                                                                 setProfile({ ...profile, [field]: e.target.value })
+                                                                 setProfile({ ...profile, [field.key]: e.target.value })
                                                              }
-                                                             className={`w-full px-4 py-2 rounded-md border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                                             className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 ${
                                                                  darkMode
-                                                                     ? "bg-gray-700 border-gray-600 text-white"
-                                                                     : "bg-white border-gray-300 text-gray-900"
+                                                                     ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                                                                     : "bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500"
                                                              }`}
                                                          />
                                                     </div>
                                                 ))}
                                            </div>
                                       </div>
+                                      
                                       <div className="mb-6">
-                                           <label className="block mb-1 text-sm font-medium">
+                                           <label className="flex items-center gap-2 mb-2 text-sm font-semibold text-gray-600 dark:text-gray-400">
+                                                <Edit3 className="w-4 h-4" />
                                                 Company Description
                                            </label>
                                            <textarea
@@ -262,17 +425,20 @@ const EmployerDashboard = ({ user }) => {
                                                         companyDescription: e.target.value,
                                                    })
                                                }
-                                               className={`w-full px-4 py-2 rounded-md border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                               placeholder="Tell us about your company..."
+                                               className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 ${
                                                    darkMode
-                                                       ? "bg-gray-700 border-gray-600 text-white"
-                                                       : "bg-white border-gray-300 text-gray-900"
+                                                       ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                                                       : "bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500"
                                                }`}
                                            />
                                       </div>
+                                      
                                       <button
                                           onClick={handleProfileSave}
-                                          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-md text-sm font-medium"
+                                          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-3 rounded-xl text-sm font-semibold transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2"
                                       >
+                                           <Save className="w-4 h-4" />
                                            Save Profile
                                       </button>
                                  </div>
@@ -281,47 +447,102 @@ const EmployerDashboard = ({ user }) => {
 
                         {tab === "posted" && (
                             <div>
-                                 <h2 className="text-2xl font-semibold mb-6">Posted Jobs</h2>
-                                 {jobs.length === 0 ? (
+                                 <div className="flex items-center justify-between mb-8">
+                                      <div className="flex items-center gap-3">
+                                           <Briefcase className="w-6 h-6 text-blue-600" />
+                                           <h2 className="text-2xl font-bold">Posted Jobs</h2>
+                                           <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-sm font-medium">
+                                                {jobs.length} jobs
+                                           </span>
+                                      </div>
+                                      <div className="flex items-center gap-3">
+                                           <Filter className={`w-5 h-5 ${
+                                               darkMode ? "text-gray-400" : "text-gray-600"
+                                           }`} />
+                                           <select className={`px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                               darkMode
+                                                   ? "bg-gray-700 border-gray-600 text-white"
+                                                   : "bg-white border-gray-300 text-gray-900"
+                                           }`}>
+                                                <option>All Jobs</option>
+                                                <option>Active</option>
+                                                <option>Completed</option>
+                                           </select>
+                                      </div>
+                                 </div>
+                                 
+                                 {filteredJobs.length === 0 ? (
                                      <div
-                                         className={`p-10 text-center rounded-xl ${
+                                         className={`p-12 text-center rounded-2xl border-2 border-dashed ${
                                              darkMode
-                                                 ? "bg-gray-800 text-gray-400"
-                                                 : "bg-white text-gray-500"
+                                                 ? "bg-gray-800 border-gray-700 text-gray-400"
+                                                 : "bg-white border-gray-300 text-gray-500"
                                          }`}
                                      >
-                                          <p className="text-base">You haven’t posted any jobs yet.</p>
+                                          <Briefcase className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                                          <p className="text-lg font-medium mb-2">No jobs posted yet</p>
+                                          <p className="text-sm mb-6">Start by creating your first job posting</p>
+                                          <button
+                                              onClick={() => setTab("create")}
+                                              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 mx-auto"
+                                          >
+                                               <Plus className="w-4 h-4" />
+                                               Post Your First Job
+                                          </button>
                                      </div>
                                  ) : (
-                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                          {jobs.map((job) => (
+                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                          {filteredJobs.map((job) => (
                                               <div
                                                   key={job.id}
-                                                  className={`p-6 rounded-xl shadow ${
-                                                      darkMode ? "bg-gray-800" : "bg-white"
+                                                  className={`p-6 rounded-2xl shadow-lg border transition-all duration-300 hover:shadow-xl hover:scale-105 ${
+                                                      darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
                                                   }`}
                                               >
-                                                   <h3 className="text-xl font-semibold mb-2">{job.title}</h3>
-                                                   <div className="flex items-center space-x-4 mb-2 text-sm text-gray-500">
-                                                        <span>{job.location}</span>
-                                                        <span className="text-blue-600">{job.salary}</span>
+                                                   <div className="flex items-start justify-between mb-4">
+                                                        <h3 className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                                                             {job.title}
+                                                        </h3>
+                                                        <div className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full text-xs font-medium">
+                                                             Active
+                                                        </div>
                                                    </div>
-                                                   <p className="text-sm mb-4 text-gray-400">
+                                                   
+                                                   <div className="flex items-center gap-4 mb-3 text-sm text-gray-500 dark:text-gray-400">
+                                                        <div className="flex items-center gap-1">
+                                                             <MapPin className="w-4 h-4" />
+                                                             <span>{job.location}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-1">
+                                                             <DollarSign className="w-4 h-4" />
+                                                             <span>{job.salary}</span>
+                                                        </div>
+                                                   </div>
+                                                   
+                                                   <p className="text-sm mb-6 text-gray-600 dark:text-gray-300 line-clamp-3">
                                                         {job.description}
                                                    </p>
+                                                   
                                                    <div className="flex gap-3">
                                                         <button
-                                                            onClick={() => handleVerifyCompletion(job.id)}
-                                                            className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-md text-sm font-medium"
+                                                            onClick={() => handleViewJobDetails(job)}
+                                                            className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-2.5 rounded-xl text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2"
                                                         >
-                                                             <CheckCircle size={16} className="inline-block mr-1" />
+                                                             <Eye className="w-4 h-4" />
+                                                             View Details
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleVerifyCompletion(job.id)}
+                                                            className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-2.5 rounded-xl text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2"
+                                                        >
+                                                             <CheckCircle className="w-4 h-4" />
                                                              Verify
                                                         </button>
                                                         <button
                                                             onClick={() => handleDeleteJob(job.id)}
-                                                            className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-md text-sm font-medium"
+                                                            className="flex-1 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white py-2.5 rounded-xl text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2"
                                                         >
-                                                             <Trash2 size={16} className="inline-block mr-1" />
+                                                             <Trash2 className="w-4 h-4" />
                                                              Delete
                                                         </button>
                                                    </div>
@@ -335,53 +556,68 @@ const EmployerDashboard = ({ user }) => {
                         {tab === "create" && (
                             <div className="max-w-3xl mx-auto">
                                  <div
-                                     className={`p-8 rounded-xl shadow ${
-                                         darkMode ? "bg-gray-800" : "bg-white"
+                                     className={`p-8 rounded-2xl shadow-xl border ${
+                                         darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
                                      }`}
                                  >
-                                      <h2 className="text-2xl font-semibold mb-6">Create a New Job</h2>
+                                      <div className="flex items-center gap-3 mb-8">
+                                           <FilePlus className="w-6 h-6 text-blue-600" />
+                                           <h2 className="text-2xl font-bold">Create a New Job</h2>
+                                      </div>
+                                      
                                       <div className="space-y-6">
                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                {["title", "location", "salary"].map((field) => (
-                                                    <div key={field}>
-                                                         <label className="block mb-1 text-sm font-medium capitalize">
-                                                              {field}
+                                                {[
+                                                     { key: "title", icon: <Briefcase className="w-4 h-4" />, label: "Job Title" },
+                                                     { key: "location", icon: <MapPin className="w-4 h-4" />, label: "Location" },
+                                                     { key: "salary", icon: <DollarSign className="w-4 h-4" />, label: "Salary" },
+                                                ].map((field) => (
+                                                    <div key={field.key} className="space-y-2">
+                                                         <label className="flex items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-400">
+                                                              {field.icon}
+                                                              {field.label}
                                                          </label>
                                                          <input
-                                                             value={newJob[field]}
+                                                             value={newJob[field.key]}
                                                              onChange={(e) =>
-                                                                 setNewJob({ ...newJob, [field]: e.target.value })
+                                                                 setNewJob({ ...newJob, [field.key]: e.target.value })
                                                              }
-                                                             placeholder={`Enter ${field}`}
-                                                             className={`w-full px-4 py-2 rounded-md border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                                             placeholder={`Enter ${field.label.toLowerCase()}`}
+                                                             className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 ${
                                                                  darkMode
-                                                                     ? "bg-gray-700 border-gray-600 text-white"
-                                                                     : "bg-white border-gray-300 text-gray-900"
+                                                                     ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                                                                     : "bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500"
                                                              }`}
                                                          />
                                                     </div>
                                                 ))}
                                            </div>
-                                           <div>
-                                                <label className="block mb-1 text-sm font-medium">Description</label>
+                                           
+                                           <div className="space-y-2">
+                                                <label className="flex items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-400">
+                                                     <Edit3 className="w-4 h-4" />
+                                                     Job Description
+                                                </label>
                                                 <textarea
-                                                    rows={5}
+                                                    rows={6}
                                                     value={newJob.description}
                                                     onChange={(e) =>
                                                         setNewJob({ ...newJob, description: e.target.value })
                                                     }
-                                                    placeholder="Enter job description"
-                                                    className={`w-full px-4 py-2 rounded-md border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                                    placeholder="Describe the job responsibilities, requirements, and benefits..."
+                                                    className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 ${
                                                         darkMode
-                                                            ? "bg-gray-700 border-gray-600 text-white"
-                                                            : "bg-white border-gray-300 text-gray-900"
+                                                            ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                                                            : "bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500"
                                                     }`}
                                                 />
                                            </div>
+                                           
                                            <button
                                                onClick={handlePostJob}
-                                               className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-md font-medium text-sm"
+                                               className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2"
                                            >
+                                                <Zap className="w-4 h-4" />
                                                 Post Job
                                            </button>
                                       </div>
@@ -390,6 +626,22 @@ const EmployerDashboard = ({ user }) => {
                         )}
                    </main>
               </div>
+
+              {/* Job Details Modal */}
+              {showJobDetails && selectedJob && (
+                   <JobDetails
+                        job={selectedJob}
+                        onClose={handleCloseJobDetails}
+                        darkMode={darkMode}
+                        onApply={() => {
+                             toast.success("Application submitted!");
+                             handleCloseJobDetails();
+                        }}
+                        onSave={() => {
+                             toast.success("Job saved!");
+                        }}
+                   />
+              )}
          </div>
      );
 };
